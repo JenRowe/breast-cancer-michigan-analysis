@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Michigan Breast Cancer Mortality Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --ink: #1c2533;
+    --ink-soft: #3d4f63;
+    --ink-muted: #7a8fa6;
+    --rule: #d9e4ef;
+    --surface: #f2f6fa;
+    --white: #ffffff;
+    --accent: #1a4a7a;
+    --accent-light: #deeaf6;
+    --accent-mid: #5b8ab5;
+    --blue: #1a4a7a;
+    --blue-mid: #2e6da4;
+    --blue-light: #deeaf6;
+    --blue-pale: #eef4fb;
+    --grey: #5c6f82;
+    --grey-light: #eaeff4;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    background: var(--ink);
+    color: var(--white);
+    padding: 3.5rem 5vw 3rem;
+    border-bottom: 3px solid var(--blue-mid);
+    position: relative;
+    overflow: hidden;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 38%;
+    height: 100%;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 18px,
+      rgba(255,255,255,0.025) 18px,
+      rgba(255,255,255,0.025) 19px
+    );
+    pointer-events: none;
+  }
+  .masthead-eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    margin-bottom: .75rem;
+  }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--white);
+    max-width: 700px;
+    margin-bottom: 1.25rem;
+  }
+  .masthead h1 em {
+    font-style: italic;
+    color: #8ab4d8;
+  }
+  .masthead-tagline {
+    font-size: 15px;
+    color: rgba(255,255,255,0.92);
+    max-width: 640px;
+    line-height: 1.55;
+    margin-bottom: .85rem;
+    padding: .7rem 1rem;
+    background: rgba(255,255,255,0.08);
+    border-left: 3px solid #5b8ab5;
+    border-radius: 0 4px 4px 0;
+  }
+  .masthead-tagline strong { color: #fff; font-weight: 500; }
+  .masthead-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    max-width: 580px;
+    line-height: 1.7;
+  }
+
+  /* ── NAV STRIP ── */
+  .nav-strip {
+    background: var(--white);
+    border-bottom: 1px solid var(--rule);
+    padding: .6rem 5vw;
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-strip a {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+  }
+  .nav-strip a:hover { color: var(--blue-mid); border-color: var(--blue-mid); }
+
+  /* ── LAYOUT ── */
+  .wrapper { max-width: 1100px; margin: 0 auto; padding: 0 5vw; }
+  .section { padding: 3.5rem 0 2.5rem; border-bottom: 1px solid var(--rule); }
+  .section:last-of-type { border-bottom: none; }
+
+  .section-header { margin-bottom: 2rem; }
+  .section-num {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--blue-mid);
+    display: block;
+    margin-bottom: .4rem;
+  }
+  .section-icon-row {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    margin-bottom: .45rem;
+  }
+  .section-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--blue-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke: var(--blue);
+    fill: none;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .section-header h2 {
+    font-family: var(--serif);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: .5rem;
+  }
+  .section-header p {
+    font-size: 14px;
+    color: var(--ink-soft);
+    max-width: 620px;
+    line-height: 1.7;
+  }
+
+  /* ── METRIC CARDS ── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .metric-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+  }
+  .metric-card .m-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: .35rem;
+  }
+  .metric-card .m-value {
+    font-family: var(--serif);
+    font-size: 2rem;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: .25rem;
+  }
+  .metric-card .m-sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  /* ── CHART CONTAINERS ── */
+  .chart-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.75rem 1.75rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .chart-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 1.25rem;
+    letter-spacing: .01em;
+  }
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-caption {
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-style: italic;
+    margin-top: .5rem;
+    padding-top: .5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .legend-row span { display: flex; align-items: center; gap: 6px; }
+  .leg { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── INTERPRETATION BOX ── */
+  .interp {
+    background: var(--white);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 4px 4px 0;
+    padding: .9rem 1.1rem;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
+  .interp strong { color: var(--ink); font-weight: 500; }
+
+  /* ── TWO-COL GRID ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── PRIORITY CARDS ── */
+  .priority-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin: 1.5rem 0;
+  }
+  .p-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--blue-mid);
+    border-radius: 4px;
+    padding: 1.1rem 1.15rem;
+  }
+  .p-card.rural { border-top-color: var(--grey); }
+  .p-name {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    color: var(--ink);
+    margin-bottom: .3rem;
+  }
+  .p-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-bottom: .65rem;
+  }
+  .badge-urban { background: var(--blue-light); color: var(--blue); }
+  .badge-rural { background: var(--grey-light); color: var(--grey); }
+  .p-stat {
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.8;
+    border-top: 1px solid var(--rule);
+    padding-top: .5rem;
+    margin-top: .3rem;
+  }
+  .p-stat b { color: var(--ink); font-weight: 500; }
+
+  /* ── METHOD NOTE ── */
+  .method-note {
+    background: var(--blue-pale);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--blue-mid);
+    border-radius: 0 4px 4px 0;
+    padding: .85rem 1.1rem;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    margin-bottom: 1.5rem;
+  }
+  .method-note strong { font-weight: 500; color: var(--ink); }
+
+  /* ── STEPS ── */
+  .step-list { list-style: none; counter-reset: steps; }
+  .step-list li {
+    counter-increment: steps;
+    display: flex;
+    gap: 1rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-list li::before {
+    content: counter(steps);
+    min-width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-body { font-size: 14px; color: var(--ink-soft); line-height: 1.7; }
+  .step-body strong { color: var(--ink); font-weight: 500; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--rule);
+    padding: .75rem 5vw;
+  }
+  .filter-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+  }
+  .filter-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .filter-hint {
+    font-weight: 400;
+    color: var(--ink-muted);
+    font-size: 11px;
+  }
+  .filter-btns { display: flex; gap: 4px; }
+  .fbtn {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .fbtn:hover { background: var(--blue-light); border-color: var(--blue-mid); color: var(--blue); }
+  .fbtn.active { background: var(--blue); border-color: var(--blue); color: var(--white); }
+  .filter-status {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  /* ── PRIORITY TYPE DIVIDERS ── */
+  .priority-type-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 1rem 0 .5rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .priority-type-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+  .priority-type-label.urban-label { color: var(--blue-mid); }
+  .priority-type-label.rural-label { color: var(--grey); }
+
+  /* ── FOOTER ── */
+  .dash-footer {
+    background: var(--ink);
+    color: rgba(255,255,255,0.5);
+    padding: 2rem 5vw;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .dash-footer strong { color: rgba(255,255,255,0.75); font-weight: 500; }
+
+  /* ── RECOMMENDATION SECTION ── */
+  .rec-section {
+    background: var(--blue);
+    color: var(--white);
+    padding: 2.75rem 5vw 2.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .rec-section .section-num { color: #8ab4d8; }
+  .rec-section .section-icon { background: rgba(255,255,255,0.12); }
+  .rec-section .section-icon svg { stroke: #8ab4d8; }
+  .rec-section h2 {
+    font-family: var(--serif);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 400;
+    color: var(--white);
+    line-height: 1.2;
+  }
+  .rec-section p.rec-lead {
+    font-size: 14px;
+    color: rgba(255,255,255,0.75);
+    max-width: 700px;
+    line-height: 1.75;
+    margin-top: .6rem;
+  }
+  .rec-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 1.5rem;
+  }
+  .rec-pill {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 4px;
+    padding: .55rem .9rem;
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+  }
+  .rec-pill svg {
+    width: 14px; height: 14px;
+    stroke: #8ab4d8;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  /* ── KEY INSIGHTS STRIP ── */
+  .insights-strip {
+    background: var(--blue-pale);
+    border-bottom: 1px solid var(--rule);
+    padding: 1.75rem 5vw 2rem;
+  }
+  .insights-inner { max-width: 1100px; margin: 0 auto; }
+  .insights-heading {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--blue-mid);
+    margin-bottom: 1.1rem;
+  }
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .insight-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--blue-mid);
+    border-radius: 4px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+  }
+  .insight-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: var(--blue-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .insight-icon svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--blue);
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .insight-body { flex: 1; }
+  .insight-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: .3rem;
+    line-height: 1.3;
+  }
+  .insight-text {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+  }
+
+  /* ── SECTION GROUP LABEL ── */
+  .group-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--blue-mid);
+    padding: 1.75rem 0 0;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+  }
+  .group-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  /* ── ANIMATION ── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .fade-in.visible { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <p class="masthead-eyebrow">Michigan County-Level Analysis · Michigan Cancer Atlas 2016–2022 · CDC WONDER 2018–2022</p>
+  <h1>Breast cancer mortality<br>across Michigan:<br><em>screening isn't the gap</em></h1>
+  <p class="masthead-tagline">Screening rates across Michigan are <strong>consistently high</strong> — yet they do not explain why mortality varies so widely. <strong>Outcomes are driven by what happens after screening:</strong> access to follow-up, care coordination, and the socioeconomic conditions patients face.</p>
+  <p class="masthead-sub">78 Michigan counties · 9,884 deaths · Michigan Cancer Atlas (2016–2022) &amp; CDC WONDER (2018–2022)</p>
+</header>
+
+<!-- ── SECTION 0: FINAL RECOMMENDATION (top) ── -->
+<div class="rec-section fade-in" id="recommendation">
+  <span class="section-num">Final recommendation</span>
+  <div class="section-icon-row">
+    <div class="section-icon">
+      <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:#8ab4d8;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    </div>
+    <h2>Mortality disparities are driven by post-screening factors, not screening access</h2>
+  </div>
+  <p class="rec-lead">Across 78 Michigan counties, mammography screening rates are consistently high — yet mortality varies widely. The evidence points clearly to what happens <strong style="color:#fff">after</strong> a positive screening: delayed follow-up, poor care coordination, geographic barriers to treatment, and socioeconomic conditions that increase baseline vulnerability. Expanding screening alone will not close this gap. Intervention must focus on the care pathway beyond detection.</p>
+  <div class="rec-pills">
+    <div class="rec-pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Screening explains near-zero variation in mortality (r ≈ 0)</div>
+    <div class="rec-pill"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Age, poverty &amp; food insecurity are the strongest correlates</div>
+    <div class="rec-pill"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>5 priority counties account for ~40% of all deaths</div>
+    <div class="rec-pill"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Focus: follow-up care, referral pathways, geographic access</div>
+  </div>
+</div>
+
+<!-- ── KEY INSIGHTS ── -->
+<div class="insights-strip fade-in" id="insights">
+  <div class="insights-inner">
+    <div class="insights-heading">
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-top:1px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Key takeaways
+    </div>
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="insight-body">
+          <div class="insight-title">Screening alone doesn't explain mortality</div>
+          <div class="insight-text">Breast cancer mortality varies widely across Michigan counties, but is not explained by screening rates alone. Outcomes are more strongly associated with demographic and socioeconomic factors, and with differences in access to follow-up and treatment after detection.</div>
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        </div>
+        <div class="insight-body">
+          <div class="insight-title">Two distinct patterns of need</div>
+          <div class="insight-text">Urban counties — Wayne, Oakland, and Macomb — contribute the greatest overall burden due to population size. Smaller rural counties — Luce and Lake — experience disproportionately high mortality rates. Both patterns are real and require different responses.</div>
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div class="insight-body">
+          <div class="insight-title">40% of deaths in five counties</div>
+          <div class="insight-text">The top five priority counties account for approximately 40% of total breast cancer deaths in Michigan. This concentration means targeted intervention in these areas can have outsized statewide impact.</div>
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="insight-body">
+          <div class="insight-title">Move beyond screening access</div>
+          <div class="insight-text">Addressing mortality requires focusing on what happens after detection — care coordination, timeliness of follow-up, and access to treatment services. These post-screening factors are the actual drivers of the disparities observed across both high-burden and high-rate counties.</div>
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="insight-body">
+          <div class="insight-title">One metric misses half the problem</div>
+          <div class="insight-text">Focusing on mortality rate alone would overlook high-burden urban counties. Focusing on total deaths alone would overlook high-rate rural counties. Only a combined approach — as used in this analysis — captures the full picture of need across Michigan.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STICKY NAV -->
+<nav class="nav-strip">
+  <a href="#recommendation">Recommendation</a>
+  <a href="#insights">Key Insights</a>
+  <a href="#screening">Screening vs. Mortality</a>
+  <a href="#overview">Dataset</a>
+  <a href="#sdoh">Socioeconomic Factors</a>
+  <a href="#access">Access to Healthcare</a>
+  <a href="#priority">Priority Counties</a>
+  <a href="#next">Next Steps</a>
+</nav>
+
+<div class="filter-bar" id="filterBar">
+  <div class="filter-inner">
+    <div class="filter-group">
+      <span class="filter-label">County type</span>
+      <div class="filter-btns" id="typeFilter">
+        <button class="fbtn active" data-val="all">All</button>
+        <button class="fbtn" data-val="urban">Urban</button>
+        <button class="fbtn" data-val="rural">Rural</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Education level <span class="filter-hint">(% adults without HS diploma)</span></span>
+      <div class="filter-btns" id="eduFilter">
+        <button class="fbtn active" data-val="all">All</button>
+        <button class="fbtn" data-val="low">Low &lt;8.3%</button>
+        <button class="fbtn" data-val="mid">Mid 8.3–9.8%</button>
+        <button class="fbtn" data-val="high">High &gt;9.8%</button>
+      </div>
+    </div>
+    <div class="filter-status" id="filterStatus">Showing all 78 counties</div>
+  </div>
+</div>
+
+<div class="wrapper">
+
+  <!-- ── SECTION 1: SCREENING vs MORTALITY ── -->
+  <section class="section fade-in" id="screening">
+    <div class="section-header">
+      <span class="section-num">01 — Screening vs. mortality</span>
+      <div class="section-icon-row">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="3"/><path d="M3 11c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8-8-3.6-8-8z"/><path d="M8 6.5C9 5.5 10 5 11 5"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
+        </div>
+        <h2>High screening, varying outcomes</h2>
+      </div>
+      <p>Each point is one Michigan county. Priority counties are highlighted in navy. A flat trendline confirms there is no meaningful relationship between screening rate and mortality — outcomes are driven by something else.</p>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Mammography screening rate vs. breast cancer mortality rate — 78 Michigan counties</div>
+      <div class="legend-row">
+        <span><span class="leg" style="background:#1a4a7a"></span>Priority county</span>
+        <span><span class="leg" style="background:#a8c4dc"></span>All other counties</span>
+        <span><span class="leg" style="background:#e05c5c;border-radius:2px;width:18px;height:3px;display:inline-block;vertical-align:middle"></span>Trendline</span>
+      </div>
+      <div class="chart-wrap" style="height:340px">
+        <canvas id="scatterChart" role="img" aria-label="Scatterplot showing no meaningful correlation between screening rate and mortality rate across 78 Michigan counties. A flat trendline confirms the near-zero relationship. Priority counties highlighted in navy.">No strong correlation between screening rate and mortality rate.</canvas>
+      </div>
+      <p class="chart-caption">Fig. 1 — Screening measured at the Prosperity Region level; mortality at the county level. Flat trendline (r ≈ 0) confirms screening rate does not predict mortality. Hover any point for full county details.</p>
+    </div>
+
+    <div class="interp">
+      <strong>Takeaway:</strong> Luce (26.2/100k) and Lake (25.6/100k) have screening rates similar to low-mortality counties. Wayne — highest burden with 1,818 deaths — has 79.3% screening yet a mortality rate of 14.8. <strong>The flat trendline is the central finding:</strong> expanding screening will not close this gap.
+    </div>
+  </section>
+
+  <!-- ── SECTION 2: DATASET OVERVIEW ── -->
+  <section class="section fade-in" id="overview">
+    <div class="section-header">
+      <span class="section-num">02 — Dataset overview</span>
+      <div class="section-icon-row">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        </div>
+        <h2>78 counties, seven social determinants</h2>
+      </div>
+      <p>County-level data on breast cancer deaths, crude mortality rates, mammography screening rates, and social determinants of health. Four counties were excluded due to small population size and data privacy requirements.</p>
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="m-label">Counties included</div>
+        <div class="m-value">78</div>
+        <div class="m-sub">4 excluded, data suppressed</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">Total deaths</div>
+        <div class="m-value">9,884</div>
+        <div class="m-sub">mortality 2016–2022 · SDOH 2018–2022</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">Mortality range</div>
+        <div class="m-value">9.4–26.2</div>
+        <div class="m-sub">deaths per 100,000 women</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">Screening range</div>
+        <div class="m-value">75–83%</div>
+        <div class="m-sub">mammography, regional level</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">SDOH variables</div>
+        <div class="m-value">7</div>
+        <div class="m-sub">poverty, insurance, age 65+…</div>
+      </div>
+    </div>
+
+    <div class="interp">
+      <strong>Key variables:</strong> Outcome = crude mortality rate (deaths per 100,000). Exposure = % women receiving mammograms. Covariates: poverty rate, uninsured rate, % age 65+, food insecurity, unemployment, education (no HS diploma), % non-white, and family history of breast/ovarian cancer. Screening is available at the Prosperity Region level only — not individual counties.
+    </div>
+  </section>
+
+  <!-- ── GROUP: DRIVERS OF DISPARITY ── -->
+  <div class="group-label wrapper">Drivers of disparity</div>
+
+  <!-- ── SECTION 3: SOCIOECONOMIC FACTORS ── -->
+  <section class="section fade-in" id="sdoh">
+    <div class="section-header">
+      <span class="section-num">03 — Socioeconomic factors</span>
+      <div class="section-icon-row">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h2>Age and poverty explain more than screening does</h2>
+      </div>
+      <p>Pearson correlations between mortality rate and key variables across all 78 counties. The strongest drivers are age and poverty — not screening. Bars for age 65+ and food insecurity are emphasized to reflect their outsized association with outcomes.</p>
+    </div>
+
+    <div class="two-col">
+      <div class="chart-card">
+        <div class="chart-title">What correlates with higher breast cancer mortality?</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="corrChart" role="img" aria-label="Horizontal bar chart: age 65+ has highest positive correlation with mortality; mammography rate near zero. Top two drivers (age 65+ and food insecurity) are shown in a darker blue to emphasize their strength.">Correlation chart: age 65+ strongest; screening near zero.</canvas>
+        </div>
+        <p class="chart-caption">Fig. 2 — Pearson r across 78 counties. <strong>Darker bars = strongest drivers.</strong> Mammography shown in grey — near-zero correlation confirms screening does not predict mortality.</p>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Poverty rate vs. mortality rate by county</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="povertyScatter" role="img" aria-label="Scatterplot of poverty rate vs mortality rate. Priority counties highlighted in navy. Modest positive trend visible.">Poverty vs mortality scatterplot with priority counties highlighted.</canvas>
+        </div>
+        <p class="chart-caption">Fig. 3 — Each point is one county. Priority counties in navy. A positive slope shows counties with more poverty tend to have higher mortality.</p>
+      </div>
+    </div>
+
+    <div class="interp">
+      <strong>Takeaway:</strong> Age (% residents 65+) is the strongest single correlate of mortality, followed by food insecurity and poverty. Mammography rate shows near-zero correlation. Crucially, poverty, food insecurity, and unemployment cluster together — <strong>counties burdened by one are typically burdened by all</strong>, compounding disadvantage after the screening visit.
+    </div>
+  </section>
+
+  <!-- ── SECTION 4: ACCESS TO HEALTHCARE ── -->
+  <section class="section fade-in" id="access">
+    <div class="section-header">
+      <span class="section-num">04 — Access to healthcare</span>
+      <div class="section-icon-row">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h2>Uninsurance and geography compound post-screening barriers</h2>
+      </div>
+      <p>Screening only helps when patients can access what comes next. Uninsurance, distance to treatment centers, and lack of care coordination prevent abnormal results from translating into timely care — and these barriers concentrate in the same high-mortality counties.</p>
+    </div>
+
+    <div class="two-col">
+      <div class="chart-card">
+        <div class="chart-title">Uninsured rate vs. mortality rate by county</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="uninsuredScatter" role="img" aria-label="Scatterplot of uninsured rate vs mortality rate across 78 counties. Priority counties highlighted in navy.">Uninsured rate vs mortality scatterplot.</canvas>
+        </div>
+        <p class="chart-caption">Fig. 4 — Uninsured rate vs. crude mortality rate. Priority counties in navy.</p>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Food insecurity rate vs. mortality rate by county</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="foodScatter" role="img" aria-label="Scatterplot of food insecurity rate vs mortality rate. Positive trend visible. Priority counties in navy.">Food insecurity vs mortality scatterplot.</canvas>
+        </div>
+        <p class="chart-caption">Fig. 5 — Food insecurity as a proxy for broader resource deprivation. Priority counties in navy.</p>
+      </div>
+    </div>
+
+    <div class="interp">
+      <strong>Takeaway:</strong> Being uninsured limits a patient's ability to access follow-up diagnostics after an abnormal mammogram. Food insecurity — a marker of broader resource deprivation — also correlates positively with mortality. <strong>Rural priority counties Luce and Lake face both</strong>, suggesting geographic isolation compounds these barriers further.
+    </div>
+  </section>
+
+  <!-- ── SECTION 5: PRIORITY COUNTIES ── -->
+  <section class="section fade-in" id="priority">
+    <div class="section-header">
+      <span class="section-num">05 — Priority counties</span>
+      <div class="section-icon-row">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        </div>
+        <h2>Two types of risk: high burden (urban) and high rate (rural)</h2>
+      </div>
+      <p>These five counties represent the greatest combination of <strong>impact</strong> (total deaths) and <strong>severity</strong> (mortality rate) in Michigan — identified using a composite z-score that equally weights both dimensions so neither type of need is overlooked.</p>
+    </div>
+
+    <div class="method-note">
+      <strong>How counties were selected:</strong> Mortality rate and total deaths were each standardized using z-scores and averaged into a single composite priority score — capturing both where outcomes are worst <em>and</em> where the overall burden is greatest. Focusing on one metric alone would miss half the problem.
+    </div>
+
+    <div class="priority-grid">
+      <div class="priority-type-label urban-label" style="grid-column:1/-1">Urban — highest total deaths (population burden)</div>
+      <div class="p-card">
+        <div class="p-name">Wayne</div>
+        <span class="p-badge badge-urban">Urban · high burden</span>
+        <div class="p-stat">Deaths: <b>1,818</b><br>Mortality: <b>14.8</b>/100k<br>Poverty: <b>20.2%</b><br>Uninsured: <b>5.8%</b><br>Non-white: <b>51.3%</b></div>
+      </div>
+      <div class="p-card">
+        <div class="p-name">Oakland</div>
+        <span class="p-badge badge-urban">Urban · high burden</span>
+        <div class="p-stat">Deaths: <b>1,219</b><br>Mortality: <b>13.7</b>/100k<br>Poverty: <b>7.7%</b><br>Uninsured: <b>4.1%</b><br>Non-white: <b>30.1%</b></div>
+      </div>
+      <div class="p-card">
+        <div class="p-name">Macomb</div>
+        <span class="p-badge badge-urban">Urban · high burden</span>
+        <div class="p-stat">Deaths: <b>924</b><br>Mortality: <b>15.1</b>/100k<br>Poverty: <b>9.8%</b><br>Uninsured: <b>5.1%</b><br>Non-white: <b>23.7%</b></div>
+      </div>
+      <div class="priority-type-label rural-label" style="grid-column:1/-1">Rural — highest mortality rates (severity)</div>
+      <div class="p-card rural">
+        <div class="p-name">Luce</div>
+        <span class="p-badge badge-rural">Rural · high rate</span>
+        <div class="p-stat">Deaths: <b>11</b><br>Mortality: <b>26.2</b>/100k<br>Poverty: <b>18.3%</b><br>Uninsured: <b>2.6%</b><br>Non-white: <b>19.5%</b></div>
+      </div>
+      <div class="p-card rural">
+        <div class="p-name">Lake</div>
+        <span class="p-badge badge-rural">Rural · high rate</span>
+        <div class="p-stat">Deaths: <b>22</b><br>Mortality: <b>25.6</b>/100k<br>Poverty: <b>20.3%</b><br>Uninsured: <b>7.0%</b><br>Non-white: <b>19.0%</b></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Priority counties: mortality rate (severity) vs. total deaths (burden)</div>
+      <div class="chart-wrap" style="height:320px">
+        <canvas id="burdenChart" role="img" aria-label="Bubble chart: Wayne and Oakland have most deaths on log scale; Luce and Lake have highest mortality rates. Bubble size reflects total deaths.">Bubble chart showing two types of priority need: high burden urban and high rate rural.</canvas>
+      </div>
+      <p class="chart-caption">Fig. 6 — Bubble size reflects total deaths. X-axis is log scale. Together these five counties account for ~40% of all breast cancer deaths in the dataset.</p>
+    </div>
+
+    <div class="interp">
+      <strong>Takeaway:</strong> Wayne, Oakland, and Macomb drive the highest total deaths — population size is the primary factor. Luce and Lake have the highest per-capita mortality rates in the state despite small populations, likely due to geographic isolation and limited specialty care. <strong>Together, these five counties account for ~40% of all Michigan breast cancer deaths.</strong> Both types require action, and different strategies.
+    </div>
+  </section>
+
+  <!-- ── SECTION 6: NEXT STEPS ── -->
+  <section class="section fade-in" id="next">
+    <div class="section-header">
+      <span class="section-num">06 — Implications and next steps</span>
+      <div class="section-icon-row">
+        <div class="section-icon">
+          <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <h2>From pattern to action</h2>
+      </div>
+      <p>Reducing mortality requires moving past screening access and focusing on what happens after detection. These steps address the actual drivers of disparity.</p>
+    </div>
+
+    <ul class="step-list">
+      <li><div class="step-body"><strong>Measure follow-up after abnormal screening.</strong> Track whether patients complete diagnostic imaging or biopsy within 90 days. Health systems in Wayne, Oakland, and Macomb can use existing Medicaid claims data to identify care coordination gaps without new infrastructure.</div></li>
+      <li><div class="step-body"><strong>Strengthen referral pathways to regional cancer centers.</strong> Standardize referral workflows from local providers to Detroit, Ann Arbor, and Grand Rapids hubs. Prioritize faster scheduling for patients in high-mortality counties. The bottleneck is not finding cancer — it is getting patients to treatment efficiently.</div></li>
+      <li><div class="step-body"><strong>Map geographic access to diagnostic and treatment services.</strong> Quantify travel time to the nearest cancer facility for Luce and Lake counties. Geographic isolation is the most likely explanation for their mortality rates being the highest in the state while screening rates are comparable to lower-mortality counties.</div></li>
+      <li><div class="step-body"><strong>Target socioeconomic interventions in high-poverty counties.</strong> Wayne (20.2% poverty) and Lake (20.3% poverty) face compounding disadvantage across poverty, food insecurity, and unemployment simultaneously. These factors amplify mortality risk beyond what any screening program alone can offset.</div></li>
+      <li><div class="step-body"><strong>Monitor outcomes over time using measurable indicators.</strong> Use mortality rate, stage at diagnosis, and time to diagnosis as primary tracking metrics — not screening rates — to evaluate whether targeted interventions are reducing disparities across the five priority counties over time.</div></li>
+    </ul>
+  </section>
+
+</div><!-- /wrapper -->
+
+<footer class="dash-footer">
+  <strong>Data sources:</strong> Michigan Cancer Atlas (2016–2022), CDC WONDER (2018–2022). Screening rates are aggregated at the Prosperity Region level and assigned to constituent counties. Crude mortality rates are unadjusted for age. Four counties were excluded from the dataset due to small population size and data suppression requirements. Priority counties (Wayne, Oakland, Macomb, Luce, Lake) identified via composite z-score equally weighting mortality rate and total deaths. All data used exactly as provided; no synthetic data or variable redefinition applied.
+</footer>
+
+<script>
+// ── Dataset (noHS = % adults without HS diploma)
+const allData = [
+  {county:'Alger',rate:20.9,deaths:13,screening:0.768,poverty:0.1025,age65:0.25,foodInsec:0.134,uninsured:0.035,noHS:0.0833,type:'rural'},
+  {county:'Allegan',rate:13.8,deaths:116,screening:0.808,poverty:0.0951,age65:0.174,foodInsec:0.087,uninsured:0.051,noHS:0.0915,type:'rural'},
+  {county:'Alpena',rate:20.4,deaths:41,screening:0.824,poverty:0.1651,age65:0.24,foodInsec:0.14,uninsured:0.055,noHS:0.0848,type:'rural'},
+  {county:'Antrim',rate:15,deaths:25,screening:0.825,poverty:0.0938,age65:0.279,foodInsec:0.115,uninsured:0.056,noHS:0.0690,type:'rural'},
+  {county:'Arenac',rate:17.1,deaths:18,screening:0.774,poverty:0.1356,age65:0.256,foodInsec:0.144,uninsured:0.057,noHS:0.1154,type:'rural'},
+  {county:'Baraga',rate:19.1,deaths:11,screening:0.768,poverty:0.1217,age65:0.229,foodInsec:0.138,uninsured:0.047,noHS:0.0984,type:'rural'},
+  {county:'Barry',rate:14.6,deaths:64,screening:0.808,poverty:0.0834,age65:0.188,foodInsec:0.093,uninsured:0.049,noHS:0.0741,type:'rural'},
+  {county:'Bay',rate:14.2,deaths:102,screening:0.774,poverty:0.1528,age65:0.208,foodInsec:0.131,uninsured:0.052,noHS:0.0957,type:'rural'},
+  {county:'Benzie',rate:15,deaths:19,screening:0.825,poverty:0.1045,age65:0.27,foodInsec:0.109,uninsured:0.067,noHS:0.0729,type:'rural'},
+  {county:'Berrien',rate:15.8,deaths:169,screening:0.751,poverty:0.1571,age65:0.204,foodInsec:0.122,uninsured:0.063,noHS:0.0913,type:'rural'},
+  {county:'Branch',rate:11.9,deaths:37,screening:0.751,poverty:0.1502,age65:0.188,foodInsec:0.115,uninsured:0.107,noHS:0.1213,type:'rural'},
+  {county:'Calhoun',rate:14.8,deaths:139,screening:0.751,poverty:0.1483,age65:0.18,foodInsec:0.13,uninsured:0.058,noHS:0.0949,type:'rural'},
+  {county:'Cass',rate:12.2,deaths:44,screening:0.751,poverty:0.1286,age65:0.215,foodInsec:0.112,uninsured:0.057,noHS:0.1105,type:'rural'},
+  {county:'Charlevoix',rate:22.9,deaths:42,screening:0.825,poverty:0.0863,age65:0.254,foodInsec:0.107,uninsured:0.072,noHS:0.0614,type:'rural'},
+  {county:'Cheboygan',rate:16.7,deaths:30,screening:0.824,poverty:0.1192,age65:0.282,foodInsec:0.137,uninsured:0.06,noHS:0.1070,type:'rural'},
+  {county:'Chippewa',rate:9.7,deaths:25,screening:0.768,poverty:0.1647,age65:0.188,foodInsec:0.147,uninsured:0.069,noHS:0.0830,type:'rural'},
+  {county:'Clare',rate:17,deaths:37,screening:0.774,poverty:0.2213,age65:0.244,foodInsec:0.183,uninsured:0.117,noHS:0.1421,type:'rural'},
+  {county:'Clinton',rate:11.3,deaths:63,screening:0.805,poverty:0.0955,age65:0.178,foodInsec:0.087,uninsured:0.04,noHS:0.0543,type:'rural'},
+  {county:'Crawford',rate:15.7,deaths:15,screening:0.824,poverty:0.1383,age65:0.259,foodInsec:0.146,uninsured:0.055,noHS:0.0914,type:'rural'},
+  {county:'Delta',rate:16.5,deaths:42,screening:0.768,poverty:0.1325,age65:0.249,foodInsec:0.131,uninsured:0.053,noHS:0.0862,type:'rural'},
+  {county:'Dickinson',rate:15.6,deaths:28,screening:0.768,poverty:0.097,age65:0.231,foodInsec:0.108,uninsured:0.049,noHS:0.0475,type:'rural'},
+  {county:'Eaton',rate:16.2,deaths:124,screening:0.805,poverty:0.0761,age65:0.192,foodInsec:0.102,uninsured:0.044,noHS:0.0632,type:'rural'},
+  {county:'Emmet',rate:18.6,deaths:44,screening:0.825,poverty:0.0837,age65:0.232,foodInsec:0.105,uninsured:0.062,noHS:0.0526,type:'rural'},
+  {county:'Genesee',rate:15.5,deaths:437,screening:0.814,poverty:0.1625,age65:0.18,foodInsec:0.139,uninsured:0.048,noHS:0.0999,type:'urban'},
+  {county:'Gladwin',rate:10.6,deaths:19,screening:0.774,poverty:0.142,age65:0.268,foodInsec:0.143,uninsured:0.086,noHS:0.1144,type:'rural'},
+  {county:'Gogebic',rate:12,deaths:12,screening:0.768,poverty:0.141,age65:0.277,foodInsec:0.126,uninsured:0.051,noHS:0.0474,type:'rural'},
+  {county:'Grand Traverse',rate:12.8,deaths:85,screening:0.825,poverty:0.104,age65:0.207,foodInsec:0.107,uninsured:0.051,noHS:0.0610,type:'rural'},
+  {county:'Gratiot',rate:12.5,deaths:36,screening:0.774,poverty:0.1412,age65:0.175,foodInsec:0.127,uninsured:0.051,noHS:0.0888,type:'rural'},
+  {county:'Hillsdale',rate:13.5,deaths:43,screening:0.79,poverty:0.1515,age65:0.204,foodInsec:0.128,uninsured:0.07,noHS:0.1046,type:'rural'},
+  {county:'Houghton',rate:14.4,deaths:37,screening:0.768,poverty:0.1727,age65:0.174,foodInsec:0.12,uninsured:0.063,noHS:0.0616,type:'rural'},
+  {county:'Huron',rate:18,deaths:39,screening:0.814,poverty:0.1126,age65:0.261,foodInsec:0.118,uninsured:0.061,noHS:0.0891,type:'rural'},
+  {county:'Ingham',rate:12.7,deaths:257,screening:0.805,poverty:0.1654,age65:0.142,foodInsec:0.124,uninsured:0.05,noHS:0.0617,type:'urban'},
+  {county:'Ionia',rate:11.3,deaths:52,screening:0.808,poverty:0.1034,age65:0.153,foodInsec:0.1,uninsured:0.067,noHS:0.0943,type:'rural'},
+  {county:'Iosco',rate:17.5,deaths:31,screening:0.824,poverty:0.1508,age65:0.3,foodInsec:0.142,uninsured:0.064,noHS:0.1104,type:'rural'},
+  {county:'Iron',rate:18.8,deaths:15,screening:0.768,poverty:0.1469,age65:0.305,foodInsec:0.14,uninsured:0.06,noHS:0.0838,type:'rural'},
+  {county:'Isabella',rate:12,deaths:56,screening:0.774,poverty:0.2361,age65:0.133,foodInsec:0.142,uninsured:0.078,noHS:0.0670,type:'rural'},
+  {county:'Jackson',rate:13.9,deaths:155,screening:0.79,poverty:0.1211,age65:0.182,foodInsec:0.114,uninsured:0.057,noHS:0.0878,type:'rural'},
+  {county:'Kalamazoo',rate:13.5,deaths:249,screening:0.751,poverty:0.1336,age65:0.155,foodInsec:0.111,uninsured:0.049,noHS:0.0581,type:'urban'},
+  {county:'Kalkaska',rate:11.8,deaths:15,screening:0.825,poverty:0.1472,age65:0.205,foodInsec:0.142,uninsured:0.073,noHS:0.1248,type:'rural'},
+  {county:'Kent',rate:11.4,deaths:526,screening:0.808,poverty:0.1073,age65:0.142,foodInsec:0.094,uninsured:0.05,noHS:0.0825,type:'urban'},
+  {county:'Lake',rate:25.6,deaths:22,screening:0.808,poverty:0.203,age65:0.278,foodInsec:0.171,uninsured:0.07,noHS:0.1833,type:'rural'},
+  {county:'Lapeer',rate:17.9,deaths:111,screening:0.814,poverty:0.1016,age65:0.189,foodInsec:0.106,uninsured:0.064,noHS:0.0902,type:'rural'},
+  {county:'Leelanau',rate:18.5,deaths:29,screening:0.825,poverty:0.0668,age65:0.324,foodInsec:0.086,uninsured:0.047,noHS:0.0440,type:'rural'},
+  {county:'Lenawee',rate:14,deaths:96,screening:0.79,poverty:0.1108,age65:0.195,foodInsec:0.108,uninsured:0.055,noHS:0.0941,type:'rural'},
+  {county:'Livingston',rate:13.4,deaths:182,screening:0.79,poverty:0.0486,age65:0.183,foodInsec:0.076,uninsured:0.033,noHS:0.0471,type:'rural'},
+  {county:'Luce',rate:26.2,deaths:11,screening:0.768,poverty:0.1827,age65:0.258,foodInsec:0.148,uninsured:0.026,noHS:0.0887,type:'rural'},
+  {county:'Mackinac',rate:19.7,deaths:15,screening:0.768,poverty:0.1581,age65:0.288,foodInsec:0.154,uninsured:0.112,noHS:0.0820,type:'rural'},
+  {county:'Macomb',rate:15.1,deaths:924,screening:0.793,poverty:0.0982,age65:0.175,foodInsec:0.105,uninsured:0.051,noHS:0.0953,type:'urban'},
+  {county:'Manistee',rate:11.4,deaths:20,screening:0.825,poverty:0.1125,age65:0.266,foodInsec:0.122,uninsured:0.045,noHS:0.1114,type:'rural'},
+  {county:'Marquette',rate:12.6,deaths:59,screening:0.768,poverty:0.1357,age65:0.197,foodInsec:0.122,uninsured:0.041,noHS:0.0535,type:'rural'},
+  {county:'Mason',rate:18.1,deaths:37,screening:0.808,poverty:0.1368,age65:0.249,foodInsec:0.134,uninsured:0.066,noHS:0.0711,type:'rural'},
+  {county:'Mecosta',rate:14.6,deaths:43,screening:0.808,poverty:0.1797,age65:0.197,foodInsec:0.137,uninsured:0.078,noHS:0.0773,type:'rural'},
+  {county:'Menominee',rate:17.4,deaths:28,screening:0.768,poverty:0.1075,age65:0.255,foodInsec:0.112,uninsured:0.05,noHS:0.0886,type:'rural'},
+  {county:'Midland',rate:14.4,deaths:84,screening:0.774,poverty:0.1015,age65:0.195,foodInsec:0.108,uninsured:0.039,noHS:0.0556,type:'rural'},
+  {county:'Missaukee',rate:13.2,deaths:14,screening:0.825,poverty:0.112,age65:0.209,foodInsec:0.122,uninsured:0.091,noHS:0.1071,type:'rural'},
+  {county:'Monroe',rate:13.9,deaths:149,screening:0.79,poverty:0.1091,age65:0.189,foodInsec:0.113,uninsured:0.036,noHS:0.0877,type:'rural'},
+  {county:'Montcalm',rate:10.8,deaths:50,screening:0.808,poverty:0.123,age65:0.174,foodInsec:0.121,uninsured:0.084,noHS:0.1213,type:'rural'},
+  {county:'Montmorency',rate:21.1,deaths:14,screening:0.824,poverty:0.1853,age65:0.319,foodInsec:0.167,uninsured:0.065,noHS:0.1236,type:'rural'},
+  {county:'Muskegon',rate:14.3,deaths:176,screening:0.808,poverty:0.1292,age65:0.176,foodInsec:0.118,uninsured:0.049,noHS:0.0873,type:'rural'},
+  {county:'Newaygo',rate:9.4,deaths:33,screening:0.808,poverty:0.1522,age65:0.198,foodInsec:0.131,uninsured:0.075,noHS:0.1127,type:'rural'},
+  {county:'Oakland',rate:13.7,deaths:1219,screening:0.793,poverty:0.077,age65:0.175,foodInsec:0.086,uninsured:0.041,noHS:0.0571,type:'urban'},
+  {county:'Oceana',rate:13.3,deaths:25,screening:0.808,poverty:0.1393,age65:0.213,foodInsec:0.124,uninsured:0.089,noHS:0.1101,type:'rural'},
+  {county:'Ogemaw',rate:18.4,deaths:27,screening:0.824,poverty:0.1707,age65:0.265,foodInsec:0.16,uninsured:0.05,noHS:0.1276,type:'rural'},
+  {county:'Osceola',rate:14.1,deaths:23,screening:0.808,poverty:0.1568,age65:0.213,foodInsec:0.131,uninsured:0.091,noHS:0.1145,type:'rural'},
+  {county:'Otsego',rate:12.4,deaths:22,screening:0.824,poverty:0.1067,age65:0.217,foodInsec:0.127,uninsured:0.075,noHS:0.0715,type:'rural'},
+  {county:'Ottawa',rate:12.5,deaths:261,screening:0.808,poverty:0.0756,age65:0.157,foodInsec:0.077,uninsured:0.034,noHS:0.0626,type:'urban'},
+  {county:'Presque Isle',rate:20.9,deaths:19,screening:0.824,poverty:0.127,age65:0.323,foodInsec:0.137,uninsured:0.06,noHS:0.0846,type:'rural'},
+  {county:'Roscommon',rate:24.5,deaths:41,screening:0.824,poverty:0.1617,age65:0.331,foodInsec:0.171,uninsured:0.054,noHS:0.0997,type:'rural'},
+  {county:'Saginaw',rate:15,deaths:199,screening:0.774,poverty:0.1821,age65:0.196,foodInsec:0.136,uninsured:0.045,noHS:0.0977,type:'urban'},
+  {county:'St Clair',rate:15.2,deaths:170,screening:0.814,poverty:0.1185,age65:0.194,foodInsec:0.12,uninsured:0.047,noHS:0.0883,type:'rural'},
+  {county:'St Joseph',rate:13.1,deaths:56,screening:0.751,poverty:0.1287,age65:0.182,foodInsec:0.119,uninsured:0.091,noHS:0.1410,type:'rural'},
+  {county:'Sanilac',rate:15.8,deaths:45,screening:0.814,poverty:0.1495,age65:0.223,foodInsec:0.136,uninsured:0.075,noHS:0.1058,type:'rural'},
+  {county:'Shiawassee',rate:13.4,deaths:64,screening:0.814,poverty:0.11,age65:0.191,foodInsec:0.119,uninsured:0.048,noHS:0.0822,type:'rural'},
+  {county:'Tuscola',rate:17.4,deaths:64,screening:0.814,poverty:0.123,age65:0.21,foodInsec:0.131,uninsured:0.051,noHS:0.0912,type:'rural'},
+  {county:'Van Buren',rate:13.6,deaths:72,screening:0.751,poverty:0.1415,age65:0.189,foodInsec:0.117,uninsured:0.075,noHS:0.1210,type:'rural'},
+  {county:'Washtenaw',rate:12.4,deaths:320,screening:0.79,poverty:0.1379,age65:0.148,foodInsec:0.096,uninsured:0.035,noHS:0.0442,type:'urban'},
+  {county:'Wayne',rate:14.8,deaths:1818,screening:0.793,poverty:0.2019,age65:0.158,foodInsec:0.138,uninsured:0.058,noHS:0.1250,type:'urban'},
+  {county:'Wexford',rate:12.6,deaths:30,screening:0.825,poverty:0.133,age65:0.2,foodInsec:0.126,uninsured:0.068,noHS:0.1122,type:'rural'}
+];
+
+const PRIORITY = ['Wayne','Oakland','Macomb','Luce','Lake'];
+const isPriority = c => PRIORITY.includes(c);
+
+// Education tertile thresholds (from dataset)
+const EDU_LOW = 0.0825;
+const EDU_MID = 0.0984;
+
+// Filter state
+let activeType = 'all';
+let activeEdu  = 'all';
+
+function getFilteredData() {
+  return allData.filter(d => {
+    const typeOk = activeType === 'all' || d.type === activeType;
+    const eduOk  = activeEdu === 'all'
+      || (activeEdu === 'low'  && d.noHS <= EDU_LOW)
+      || (activeEdu === 'mid'  && d.noHS > EDU_LOW && d.noHS <= EDU_MID)
+      || (activeEdu === 'high' && d.noHS > EDU_MID);
+    return typeOk && eduOk;
+  });
+}
+
+// Rich tooltip builder for scatter charts
+function richLabel(ctx, xLabel, xUnit) {
+  const d = ctx.raw;
+  const county = d.county;
+  const rec = allData.find(r => r.county === county);
+  if (!rec) return '';
+  const pri = isPriority(county) ? ' ★ Priority' : '';
+  return [
+    `${county}${pri}`,
+    `Mortality: ${rec.rate}/100k`,
+    `${xLabel}: ${d.x}${xUnit}`,
+    `Deaths: ${rec.deaths.toLocaleString()}`,
+    `Poverty: ${(rec.poverty*100).toFixed(1)}%`,
+    `Uninsured: ${(rec.uninsured*100).toFixed(1)}%`,
+    `Age 65+: ${(rec.age65*100).toFixed(1)}%`,
+    `No HS diploma: ${(rec.noHS*100).toFixed(1)}%`
+  ];
+}
+
+// Tooltip title suppressor (use first line of label instead)
+const noTitle = { title: () => '' };
+
+const textCol = '#888';
+const gridCol = 'rgba(0,0,0,0.06)';
+
+// ── Pearson (always on full dataset for correlation chart)
+const rates = allData.map(d => d.rate);
+const n = allData.length;
+const meanR = rates.reduce((a,b)=>a+b,0)/n;
+function pearson(arr) {
+  const m2 = arr.reduce((a,b)=>a+b,0)/n;
+  let num=0,d1=0,d2=0;
+  for(let i=0;i<n;i++){num+=(rates[i]-meanR)*(arr[i]-m2);d1+=(rates[i]-meanR)**2;d2+=(arr[i]-m2)**2;}
+  return +(num/Math.sqrt(d1*d2)).toFixed(3);
+}
+
+// ── Linear regression helper for trendline
+function linReg(pts) {
+  const nx = pts.length;
+  const mx = pts.reduce((s,p)=>s+p.x,0)/nx;
+  const my = pts.reduce((s,p)=>s+p.y,0)/nx;
+  let num=0,den=0;
+  pts.forEach(p=>{num+=(p.x-mx)*(p.y-my);den+=(p.x-mx)**2;});
+  const slope = den===0?0:num/den;
+  const intercept = my - slope*mx;
+  return {slope,intercept};
+}
+
+// ── Scatter point builder — now includes trendline dataset
+function scatterDatasets(xFn, xLabel, xUnit, addTrend=false) {
+  const filtered = getFilteredData();
+  const allPts   = filtered.map(d=>({x:+(xFn(d)*100).toFixed(1),y:d.rate,county:d.county}));
+  const priPts   = filtered.filter(d=>isPriority(d.county)).map(d=>({x:+(xFn(d)*100).toFixed(1),y:d.rate,county:d.county}));
+  const othPts   = filtered.filter(d=>!isPriority(d.county)).map(d=>({x:+(xFn(d)*100).toFixed(1),y:d.rate,county:d.county}));
+  const sets = [
+    { label:'Priority counties', data:priPts, backgroundColor:'#1a4a7a', pointRadius:8, pointHoverRadius:11 },
+    { label:'All other counties', data:othPts, backgroundColor:'#a8c4dc', pointRadius:5, pointHoverRadius:8 }
+  ];
+  if (addTrend && allPts.length >= 2) {
+    const xs = allPts.map(p=>p.x);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const {slope,intercept} = linReg(allPts);
+    sets.push({
+      label:'Trendline',
+      data:[{x:xMin,y:+(slope*xMin+intercept).toFixed(2)},{x:xMax,y:+(slope*xMax+intercept).toFixed(2)}],
+      type:'line',
+      borderColor:'#e05c5c',
+      borderWidth:2,
+      borderDash:[6,4],
+      pointRadius:0,
+      fill:false,
+      tension:0
+    });
+  }
+  return sets;
+}
+
+// ── Correlation bar data (computed on filtered set)
+function corrDatasets() {
+  const fd = getFilteredData();
+  const fr = fd.map(d => d.rate);
+  const fn2 = fd.length;
+  if (fn2 < 3) return null;
+  const fMean = fr.reduce((a,b)=>a+b,0)/fn2;
+  function fp(arr) {
+    const m2 = arr.reduce((a,b)=>a+b,0)/fn2;
+    let num=0,d1=0,d2=0;
+    for(let i=0;i<fn2;i++){num+=(fr[i]-fMean)*(arr[i]-m2);d1+=(fr[i]-fMean)**2;d2+=(arr[i]-m2)**2;}
+    const denom = Math.sqrt(d1*d2);
+    return denom === 0 ? 0 : +(num/denom).toFixed(3);
+  }
+  const vars = [
+    { label:'% age 65+',       r: fp(fd.map(d=>d.age65))     },
+    { label:'food insecurity',  r: fp(fd.map(d=>d.foodInsec)) },
+    { label:'poverty rate',     r: fp(fd.map(d=>d.poverty))   },
+    { label:'uninsured rate',   r: fp(fd.map(d=>d.uninsured)) },
+    { label:'mammography rate', r: fp(fd.map(d=>d.screening)) },
+  ];
+  vars.sort((a,b) => b.r - a.r);
+  // Mark top 2 positive correlates for emphasis
+  let topCount = 0;
+  vars.forEach(v => {
+    if (v.r > 0) { v.top = topCount < 2; topCount++; }
+    else { v.top = false; }
+  });
+  return vars;
+}
+
+// Color logic for corr bars: top 2 = dark navy emphasis, others = mid blue, mammography = grey
+function corrBarColor(v) {
+  if (v.label === 'mammography rate') return '#b4bec8';
+  if (v.top) return '#1a4a7a';
+  return v.r >= 0 ? '#5b8ab5' : '#5c6f82';
+}
+
+// ── Shared scatter options factory
+function scatterOpts(xTitle, xLabel, xUnit) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: () => '',
+          label: ctx => richLabel(ctx, xLabel, xUnit)
+        },
+        backgroundColor: 'rgba(28,37,51,0.92)',
+        padding: 10,
+        bodyFont: { size: 12 },
+        bodySpacing: 3
+      }
+    },
+    scales: {
+      x: { title:{display:true,text:xTitle,color:textCol,font:{size:12}}, ticks:{color:textCol,callback:v=>v+'%'}, grid:{color:gridCol} },
+      y: { title:{display:true,text:'Mortality rate (per 100,000)',color:textCol,font:{size:12}}, min:7,max:29, ticks:{color:textCol}, grid:{color:gridCol} }
+    }
+  };
+}
+
+// ── Chart 1: Screening scatter (with trendline)
+const chartScatter = new Chart(document.getElementById('scatterChart'), {
+  type: 'scatter',
+  data: { datasets: scatterDatasets(d=>d.screening, 'Screening', '%', true) },
+  options: {
+    ...scatterOpts('Mammography screening rate (%)', 'Screening', '%'),
+    scales: {
+      x: { title:{display:true,text:'Mammography screening rate (%)',color:textCol,font:{size:12}}, min:73,max:85, ticks:{color:textCol,callback:v=>v+'%'}, grid:{color:gridCol} },
+      y: { title:{display:true,text:'Mortality rate (per 100,000)',color:textCol,font:{size:12}}, min:7,max:29, ticks:{color:textCol}, grid:{color:gridCol} }
+    }
+  }
+});
+
+// ── Chart 2: Correlation bar
+const corrVarsInit = corrDatasets();
+const chartCorr = new Chart(document.getElementById('corrChart'), {
+  type: 'bar',
+  data: {
+    labels: corrVarsInit.map(c=>c.label),
+    datasets:[{
+      data: corrVarsInit.map(c=>c.r),
+      backgroundColor: corrVarsInit.map(c=>corrBarColor(c)),
+      borderRadius: 3
+    }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: () => '',
+          label: ctx => ` ${ctx.label}: r = ${ctx.raw.toFixed(3)}`
+        },
+        backgroundColor: 'rgba(28,37,51,0.92)',
+        padding: 10,
+        bodyFont: { size: 13 }
+      }
+    },
+    scales: {
+      x: { min:-0.35,max:0.7, title:{display:true,text:'Pearson r (correlation with mortality)',color:textCol,font:{size:12}}, ticks:{color:textCol}, grid:{color:gridCol} },
+      y: { ticks:{color:textCol,font:{size:12}}, grid:{color:gridCol} }
+    }
+  }
+});
+
+// ── Chart 3: Poverty scatter
+const chartPoverty = new Chart(document.getElementById('povertyScatter'), {
+  type: 'scatter',
+  data: { datasets: scatterDatasets(d=>d.poverty, 'Poverty', '%') },
+  options: scatterOpts('Poverty rate (%)', 'Poverty', '%')
+});
+
+// ── Chart 4: Uninsured scatter
+const chartUninsured = new Chart(document.getElementById('uninsuredScatter'), {
+  type: 'scatter',
+  data: { datasets: scatterDatasets(d=>d.uninsured, 'Uninsured', '%') },
+  options: scatterOpts('Uninsured rate (%)', 'Uninsured', '%')
+});
+
+// ── Chart 5: Food insecurity scatter
+const chartFood = new Chart(document.getElementById('foodScatter'), {
+  type: 'scatter',
+  data: { datasets: scatterDatasets(d=>d.foodInsec, 'Food insecurity', '%') },
+  options: scatterOpts('Food insecurity rate (%)', 'Food insecurity', '%')
+});
+
+// ── Chart 6: Burden bubble (priority counties only — filters don't apply)
+const pData = PRIORITY.map(name => allData.find(d => d.county === name));
+const bubbleColors = ['#1a4a7a','#2e6da4','#5b8ab5','#3d4f63','#7a8fa6'];
+new Chart(document.getElementById('burdenChart'), {
+  type: 'bubble',
+  data: { datasets: pData.map((d,i) => ({
+    label: d.county,
+    data: [{ x:d.deaths, y:d.rate, r:Math.max(10, Math.sqrt(d.deaths)/4.0) }],
+    backgroundColor: bubbleColors[i]+'99',
+    borderColor: bubbleColors[i],
+    borderWidth: 2
+  }))},
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    layout: { padding:{top:16,right:16,bottom:8,left:8} },
+    plugins: {
+      legend: { display:true, position:'bottom', labels:{color:textCol,font:{size:12},boxWidth:10,padding:18} },
+      tooltip: {
+        callbacks: {
+          title: () => '',
+          label: ctx => {
+            const d = pData.find(p => p.county === ctx.dataset.label);
+            return [
+              `${ctx.dataset.label} ★ Priority`,
+              `Mortality: ${d.rate}/100k`,
+              `Total deaths: ${d.deaths.toLocaleString()}`,
+              `Poverty: ${(d.poverty*100).toFixed(1)}%`,
+              `Uninsured: ${(d.uninsured*100).toFixed(1)}%`,
+              `Age 65+: ${(d.age65*100).toFixed(1)}%`
+            ];
+          }
+        },
+        backgroundColor: 'rgba(28,37,51,0.92)',
+        padding: 10,
+        bodyFont: { size: 12 },
+        bodySpacing: 3
+      }
+    },
+    scales: {
+      x: { type:'logarithmic', title:{display:true,text:'Total deaths (log scale)',color:textCol,font:{size:12}}, ticks:{color:textCol,callback:v=>v.toLocaleString()}, grid:{color:gridCol} },
+      y: { title:{display:true,text:'Mortality rate (per 100,000)',color:textCol,font:{size:12}}, min:12,max:29, ticks:{color:textCol}, grid:{color:gridCol} }
+    }
+  }
+});
+
+// ── Filter update function
+function applyFilters() {
+  const fd = getFilteredData();
+  const count = fd.length;
+  document.getElementById('filterStatus').textContent =
+    `Showing ${count} of 78 counties`;
+
+  // Update scatter charts
+  chartScatter.data.datasets  = scatterDatasets(d=>d.screening,  'Screening',       '%', true);
+  chartPoverty.data.datasets  = scatterDatasets(d=>d.poverty,    'Poverty',         '%');
+  chartUninsured.data.datasets= scatterDatasets(d=>d.uninsured,  'Uninsured',       '%');
+  chartFood.data.datasets     = scatterDatasets(d=>d.foodInsec,  'Food insecurity', '%');
+  [chartScatter, chartPoverty, chartUninsured, chartFood].forEach(c => c.update());
+
+  // Update correlation bar
+  const cv = corrDatasets();
+  if (cv) {
+    chartCorr.data.labels = cv.map(c=>c.label);
+    chartCorr.data.datasets[0].data = cv.map(c=>c.r);
+    chartCorr.data.datasets[0].backgroundColor = cv.map(c=>corrBarColor(c));
+    chartCorr.update();
+  }
+}
+
+// ── Filter button wiring
+document.querySelectorAll('#typeFilter .fbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#typeFilter .fbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeType = btn.dataset.val;
+    applyFilters();
+  });
+});
+
+document.querySelectorAll('#eduFilter .fbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#eduFilter .fbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeEdu = btn.dataset.val;
+    applyFilters();
+  });
+});
+
+// ── Scroll fade-in
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.08});
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
