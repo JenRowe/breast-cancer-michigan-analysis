@@ -7,9 +7,9 @@ Breast cancer mortality varies significantly across Michigan counties despite co
 Screening rates do not explain mortality differences. Outcomes are more strongly associated with post-screening factors such as access to care, socioeconomic conditions, and population risk.
 
 ## What I Built
-- Interactive data dashboard
-- Research analysis
-- Executive presentation
+- Interactive data dashboard ([View Dashboard](https://jenrowe.github.io/breast-cancer-michigan-analysis/))  
+- Research paper ([View PDF](research-paper.pdf))  
+- Executive presentation ([View slides](presentation.pdf))  
 
 ## Methods
 - Exploratory data analysis
