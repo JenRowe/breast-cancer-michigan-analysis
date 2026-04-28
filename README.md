@@ -28,3 +28,11 @@ Focus on improving post-screening care pathways, including timely diagnosis, tre
 
 ## Live Dashboard
 [View the dashboard](https://jenrowe.github.io/breast-cancer-michigan-analysis/)
+
+## 🎥 Presentation
+
+Watch my full project presentation here:
+
+[Loom Video Presentation]((https://www.loom.com/share/fcff65b2aaa54f8e816f2da612ae1a24))
+
+
