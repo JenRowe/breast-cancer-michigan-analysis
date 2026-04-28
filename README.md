@@ -33,6 +33,6 @@ Focus on improving post-screening care pathways, including timely diagnosis, tre
 
 Watch my full project presentation here:
 
-[Loom Video Presentation]((https://www.loom.com/share/fcff65b2aaa54f8e816f2da612ae1a24))
+[Loom Video Presentation](https://www.loom.com/share/fcff65b2aaa54f8e816f2da612ae1a24)
 
 
